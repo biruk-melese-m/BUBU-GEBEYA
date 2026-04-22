@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BUBU GEBEYA — Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --admin-primary: #0f172a;
+            --admin-accent: #6366f1;
+        }
+        body { background: #f1f5f9; }
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+        .admin-sidebar {
+            background: var(--admin-primary);
+            color: white;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+        .admin-logo {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .admin-nav-item {
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 14px;
+            color: #94a3b8;
+            display: flex;align-items: center; gap: 12px;
+        }
+        .admin-nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+        .admin-nav-item.active { background: var(--admin-accent); color: white; }
+
+        .admin-main { padding: 40px; overflow-y: auto; }
+        .admin-header { margin-bottom: 32px; }
+        .admin-header h1 { font-size: 28px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+        .admin-header p { color: #64748b; font-size: 15px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 40px; }
+        .stat-card {
+            background: white; border-radius: 20px; padding: 24px;
+            border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .stat-val { font-size: 32px; font-weight: 800; color: #1e293b; margin: 8px 0; }
+        .stat-lbl { color: #64748b; font-size: 14px; font-weight: 600; }
+
+        .admin-card {
+            background: white; border-radius: 20px; border: 1px solid #e2e8f0;
+            overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .card-header { padding: 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+        .card-header h2 { font-size: 18px; font-weight: 700; color: #1e293b; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px 24px; background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        td { padding: 16px 24px; border-top: 1px solid #f1f5f9; vertical-align: middle; }
+        tr:hover { background: #f8fafc; }
+
+        .badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-featured { background: #fef9c3; color: #854d0e; }
+        
+        .btn-action {
+            padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;
+        }
+        .btn-delete { background: #fee2e2; color: #b91c1c; }
+        .btn-delete:hover { background: #ef4444; color: white; }
+        .btn-feature { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+        .btn-feature:hover { border-color: var(--admin-accent); color: var(--admin-accent); }
+
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+
+        .login-overlay {
+            position: fixed; inset: 0; background: var(--admin-primary); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-card { background: white; padding: 40px; border-radius: 24px; width: 100%; max-width: 400px; text-align: center; }
+        .login-card input { width: 100%; padding: 14px; border: 2px solid #f1f5f9; border-radius: 12px; margin-top: 20px; outline: none; font-size: 16px; transition: border-color 0.2s; }
+        .login-card input:focus { border-color: var(--admin-accent); }
+    </style>
+</head>
+<body>
+
+    <!-- Simple Gatekeeper -->
+    <div id="adminLogin" class="login-overlay">
+        <div class="login-card">
+            <h1 style="font-weight: 800; font-size: 24px">Admin Access</h1>
+            <p style="color: #64748b; margin-top: 8px">Enter the secret key to proceed</p>
+            <input type="password" id="adminKey" placeholder="Secret Key..." onkeydown="if(event.key==='Enter') checkAdminAuth()">
+            <button onclick="checkAdminAuth()" style="width: 100%; padding: 14px; background: var(--admin-accent); color: white; border-radius: 12px; font-weight: 700; margin-top: 12px; cursor: pointer">Unlock Dashboard</button>
+        </div>
+    </div>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div class="admin-logo">🛡️ BUBU Admin</div>
+            <nav>
+                <div class="admin-nav-item active" data-target="overview">📊 Overview</div>
+                <div class="admin-nav-item" data-target="users">👥 Users</div>
+                <div class="admin-nav-item" data-target="listings">📦 Listings</div>
+                <div class="admin-nav-item" data-target="reports">🚩 Reports</div>
+            </nav>
+            <div style="margin-top:auto">
+                <div class="admin-nav-item" onclick="window.location.href='index.html'" style="color: #ef4444">🚪 Exit Admin</div>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            <!-- OVERVIEW -->
+            <section id="section-overview" class="admin-section active">
+                <header class="admin-header">
+                    <h1>Dashboard</h1>
+                    <p>Real-time statistics from Supabase cloud.</p>
+                </header>
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card"><div class="stat-lbl">Total Listings</div><div class="stat-val" id="stat-ads">0</div></div>
+                    <div class="stat-card"><div class="stat-lbl">Active Users</div><div class="stat-val" id="stat-users">0</div></div>
+                    <div class="stat-card"><div class="stat-lbl">Pending Reports</div><div class="stat-val" id="stat-reports">0</div></div>
+                </div>
+                <div class="admin-card">
+                    <div class="card-header"><h2>Recent Activity</h2></div>
+                    <div id="recentActivity">
+                        <p style="padding: 32px; text-align: center; color: #94a3b8">Syncing data...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- USERS -->
+            <section id="section-users" class="admin-section">
+                <header class="admin-header"><h1>User Management</h1></header>
+                <div class="admin-card">
+                    <table>
+                        <thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="userTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- LISTINGS -->
+            <section id="section-listings" class="admin-section">
+                <header class="admin-header"><h1>Listing Management</h1></header>
+                <div class="admin-card">
+                    <table>
+                        <thead><tr><th>Ad Details</th><th>Seller</th><th>Price</th><th>Category</th><th>Actions</th></tr></thead>
+                        <tbody id="listingTable"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- REPORTS -->
+            <section id="section-reports" class="admin-section">
+                <header class="admin-header"><h1>🚩 Safety Reports</h1></header>
+                <div class="admin-card">
+                    <table>
+                        <thead><tr><th>Listing</th><th>Reported By</th><th>Reason</th><th>Details</th><th>Actions</th></tr></thead>
+                        <tbody id="reportTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- QUICK EDIT MODAL -->
+    <div id="editModal" class="login-overlay" style="display:none; align-items: center; justify-content: center; backdrop-filter: blur(8px); background: rgba(15, 23, 42, 0.8);">
+        <div class="login-card" style="max-width: 500px; text-align: left;">
+            <h2 style="font-weight: 800; font-size: 20px; margin-bottom: 20px;">✏️ Quick Edit Ad</h2>
+            
+            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Ad Title</label>
+            <input type="text" id="editAdTitle" placeholder="Title..." style="margin-top: 8px; margin-bottom: 16px;">
+            
+            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Price (ETB)</label>
+            <input type="number" id="editAdPrice" placeholder="Price..." style="margin-top: 8px; margin-bottom: 16px;">
+            
+            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Description</label>
+            <textarea id="editAdDesc" rows="5" style="width: 100%; padding: 14px; border: 2px solid #f1f5f9; border-radius: 12px; margin-top: 8px; outline: none; font-family: inherit; font-size: 14px; resize: none;"></textarea>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button onclick="saveAdminEdit()" style="flex: 2; padding: 14px; background: var(--admin-accent); color: white; border-radius: 12px; font-weight: 700; cursor: pointer;">Save Changes</button>
+                <button onclick="closeAdminModal()" style="flex: 1; padding: 14px; background: #f1f5f9; color: #475569; border-radius: 12px; font-weight: 700; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>
